@@ -179,7 +179,8 @@ export function HorarioGanttModal({ isOpen, onClose, barberos, sucursal }: Horar
 
                                                 // Check for lunch
                                                 let isLunch = false
-                                                if (barbero.bloqueo_almuerzo && barbero.bloqueo_almuerzo.inicio && barbero.bloqueo_almuerzo.fin) {
+                                                // Only show lunch if working today
+                                                if (workSchedule && barbero.bloqueo_almuerzo && barbero.bloqueo_almuerzo.inicio && barbero.bloqueo_almuerzo.fin) {
                                                     const startH = parseInt(barbero.bloqueo_almuerzo.inicio.split(':')[0])
                                                     const endH = parseInt(barbero.bloqueo_almuerzo.fin.split(':')[0])
 
@@ -229,6 +230,7 @@ export function HorarioGanttModal({ isOpen, onClose, barberos, sucursal }: Horar
                         <div className="w-3 h-3 bg-red-500/20 border border-red-500/30 rounded flex items-center justify-center pattern-diagonal-lines">🍽️</div>
                         <span>Almuerzo</span>
                     </div>
+
                 </div>
             </div>
         </div>,

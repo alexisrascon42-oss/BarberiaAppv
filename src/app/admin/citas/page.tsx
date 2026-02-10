@@ -11,6 +11,14 @@ export default function CitasPage() {
     const [loading, setLoading] = useState(true)
     const [filtroFecha, setFiltroFecha] = useState('') // Empty initially
     const [filtroEstado, setFiltroEstado] = useState<EstadoCita | 'todas'>('todas')
+
+    
+    // History Mode State
+    const [viewMode, setViewMode] = useState<'daily' | 'history'>('daily')
+    const [historyStart, setHistoryStart] = useState('')
+    const [historyEnd, setHistoryEnd] = useState('')
+    const [searchTerm, setSearchTerm] = useState('')
+
     const [debugMsg, setDebugMsg] = useState('')
     const [showModal, setShowModal] = useState(false)
     const [editingCita, setEditingCita] = useState<CitaConRelaciones | null>(null)
@@ -31,7 +39,7 @@ export default function CitasPage() {
     const handleDeleteCita = async (id: string) => {
         if (!confirm('¿Estás seguro de eliminar esta cita?')) return
         try {
-            const { error } = await supabase.from('citas').delete().eq('id', id)
+            const { error } = await (supabase.from('citas') as any).delete().eq('id', id)
             if (error) throw error
             cargarCitas()
         } catch (err: any) {
@@ -41,8 +49,8 @@ export default function CitasPage() {
 
     const handleStatusChange = async (cardita: CitaConRelaciones, newStatus: EstadoCita) => {
         try {
-            const { error } = await supabase
-                .from('citas')
+            const { error } = await (supabase
+                .from('citas') as any)
                 .update({ estado: newStatus })
                 .eq('id', cardita.id)
 
@@ -58,7 +66,15 @@ export default function CitasPage() {
 
     // Initialize date only on client side
     useEffect(() => {
-        setFiltroFecha(new Date().toISOString().split('T')[0])
+        const today = new Date().toISOString().split('T')[0]
+        setFiltroFecha(today)
+        
+        // Default history range: last 30 days
+        const lastMonth = new Date()
+        lastMonth.setDate(lastMonth.getDate() - 30)
+        setHistoryStart(lastMonth.toISOString().split('T')[0])
+        setHistoryEnd(today)
+
         setMounted(true)
     }, [])
 
@@ -81,9 +97,24 @@ export default function CitasPage() {
           servicio:servicios(*),
           barbero:barberos(nombre, estacion_id)
         `)
-                .gte('timestamp_inicio', inicioDelDia)
-                .lte('timestamp_inicio', finDelDia)
-                .order('timestamp_inicio', { ascending: true })
+
+            if (viewMode === 'daily') {
+                query = query
+                    .gte('timestamp_inicio', inicioDelDia)
+                    .lte('timestamp_inicio', finDelDia)
+                    .order('timestamp_inicio', { ascending: true })
+            } else {
+                // History Mode
+                if (historyStart) query = query.gte('timestamp_inicio', `${historyStart}T00:00:00`)
+                if (historyEnd) query = query.lte('timestamp_inicio', `${historyEnd}T23:59:59`)
+                
+                if (searchTerm) {
+                    query = query.ilike('cliente_nombre', `%${searchTerm}%`)
+                }
+                
+                // Limit history to avoid huge payloads, order by newest first
+                query = query.order('timestamp_inicio', { ascending: false }).limit(50)
+            }
 
             if (filtroEstado !== 'todas') {
                 query = query.eq('estado', filtroEstado)
@@ -111,13 +142,17 @@ export default function CitasPage() {
         } finally {
             setLoading(false)
         }
-    }, [supabase, filtroFecha, filtroEstado])
+    }, [supabase, filtroFecha, filtroEstado, viewMode, historyStart, historyEnd, searchTerm])
 
+    // Load data when mode changes or filters change (debouncing search could be added here)
     useEffect(() => {
-        if (mounted && filtroFecha) {
-            cargarCitas()
+        if (mounted) {
+            if (viewMode === 'daily' && filtroFecha) cargarCitas()
+            // For history, maybe wait for explicit "Buscar" or load initial? 
+            // Let's load initial for now
+            if (viewMode === 'history') cargarCitas()
         }
-    }, [mounted, filtroFecha, cargarCitas])
+    }, [mounted, viewMode, filtroFecha, cargarCitas]) // Removed specific history deps to avoid auto-reload on every keystroke if unwanted, but kept simple for now
 
     // Avoid hydration mismatch by not rendering until mounted
     if (!mounted) {
@@ -130,17 +165,41 @@ export default function CitasPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-white">Citas</h1>
-                        <p className="text-slate-400 mt-1">Gestiona las citas del día</p>
+                        <p className="text-slate-400 mt-1">
+                            {viewMode === 'daily' ? 'Gestiona las citas del día' : 'Historial de clientes'}
+                        </p>
                     </div>
-                    <button
-                        onClick={() => handleNewCita('whatsapp')}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Nueva Cita
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setViewMode(prev => prev === 'daily' ? 'history' : 'daily')}
+                            className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-2"
+                        >
+                            {viewMode === 'daily' ? (
+                                <>
+                                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Ver Historial
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    Ver Diario
+                                </>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => handleNewCita('whatsapp')}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Nueva Cita
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -179,16 +238,60 @@ export default function CitasPage() {
 
             {/* Filters */}
             <div className="glass-card p-4 mb-6">
-                <div className="flex items-center gap-4">
-                    <div>
-                        <label className="block text-xs text-slate-400 mb-1">Fecha</label>
-                        <input
-                            type="date"
-                            value={filtroFecha}
-                            onChange={(e) => setFiltroFecha(e.target.value)}
-                            className="input-field w-auto"
-                        />
-                    </div>
+                <div className="flex flex-wrap items-end gap-4">
+                    {viewMode === 'daily' ? (
+                        /* Daily Filters */
+                        <>
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Fecha</label>
+                                <input
+                                    type="date"
+                                    value={filtroFecha}
+                                    onChange={(e) => setFiltroFecha(e.target.value)}
+                                    className="input-field w-auto"
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        /* History Filters */
+                        <>
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Buscar Cliente</label>
+                                <div className="relative">
+                                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <input
+                                        type="text"
+                                        placeholder="Nombre..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="input-field w-64 pl-9"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Desde</label>
+                                <input
+                                    type="date"
+                                    value={historyStart}
+                                    onChange={(e) => setHistoryStart(e.target.value)}
+                                    className="input-field w-auto"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Hasta</label>
+                                <input
+                                    type="date"
+                                    value={historyEnd}
+                                    onChange={(e) => setHistoryEnd(e.target.value)}
+                                    className="input-field w-auto"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* Common Filters */}
                     <div>
                         <label className="block text-xs text-slate-400 mb-1">Estado</label>
                         <select
@@ -207,10 +310,16 @@ export default function CitasPage() {
                     </div>
                     <button
                         onClick={() => cargarCitas()}
-                        className="btn-secondary px-4 py-2 mt-5"
+                        className="btn-secondary px-4 py-2"
                     >
-                        Actualizar
+                        {viewMode === 'daily' ? 'Actualizar' : 'Buscar'}
                     </button>
+                    
+                    {viewMode === 'history' && (
+                        <div className="ml-auto text-xs text-slate-500 self-center">
+                            Mostrando últimos 50 resultados
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -449,7 +558,7 @@ function CitaModal({
             if (barbs) setBarberos(barbs)
 
             // Load Sucursal ID
-            const { data: suc } = await supabase.from('sucursales').select('id').limit(1).single()
+            const { data: suc } = await (supabase.from('sucursales') as any).select('id').limit(1).single()
             if (suc) setSucursalId(suc.id)
         }
         loadDeps()
