@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/* BarberCloud AI - Design System */
+:root {
+  /* Brand Colors */
+  --primary: #7c3aed;        /* Purple - brand */
+  --primary-dark: #5b21b6;
+  --primary-light: #a78bfa;
+  
+  --secondary: #f59e0b;      /* Amber - accent */
+  --secondary-dark: #d97706;
+  --secondary-light: #fbbf24;
+  
+  /* Status Colors */
+  --status-confirmed: #3b82f6;    /* Blue */
+  --status-waiting: #f59e0b;       /* Amber */
+  --status-in-progress: #10b981;   /* Green */
+  --status-completed: #6b7280;     /* Gray */
+  --status-cancelled: #ef4444;     /* Red */
+  --status-no-show: #dc2626;       /* Dark Red */
+  
+  /* Background Colors */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  
+  /* Text Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  --gradient-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --gradient-glow: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+}
+
+/* Base Styles */
+html {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glass Morphism Card */
+.glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 1rem;
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+  @apply bg-gradient-to-r from-purple-600 to-purple-500;
+  @apply hover:from-purple-500 hover:to-purple-400;
+  @apply hover:shadow-lg hover:shadow-purple-500/30;
+  @apply active:scale-95;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+  @apply bg-slate-700 text-white;
+  @apply hover:bg-slate-600;
+  @apply active:scale-95;
+}
+
+.btn-danger {
+  @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+  @apply bg-red-600 text-white;
+  @apply hover:bg-red-500;
+  @apply active:scale-95;
+}
+
+/* Status Badge */
+.status-badge {
+  @apply px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider;
+}
+
+.status-confirmed {
+  @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+}
+
+.status-waiting {
+  @apply bg-amber-500/20 text-amber-400 border border-amber-500/30;
+}
+
+.status-in-progress {
+  @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
+}
+
+.status-completed {
+  @apply bg-slate-500/20 text-slate-400 border border-slate-500/30;
+}
+
+.status-cancelled,
+.status-no-show {
+  @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+/* Glow Effects */
+.glow-purple {
+  box-shadow: 0 0 40px rgba(124, 58, 237, 0.4);
+}
+
+.glow-amber {
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.7); }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.4s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Timeline Styles */
+.timeline-slot {
+  @apply relative border-l-2 border-slate-700 pl-4 py-2;
+  @apply hover:bg-slate-800/50 transition-colors duration-200;
+}
+
+.timeline-slot::before {
+  content: '';
+  @apply absolute -left-[5px] top-1/2 -translate-y-1/2;
+  @apply w-2 h-2 rounded-full bg-slate-600;
+}
+
+.timeline-slot.has-appointment::before {
+  @apply bg-purple-500;
+}
+
+/* Current Time Indicator */
+.current-time-line {
+  @apply absolute left-0 right-0 h-0.5 bg-red-500 z-10;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Input Styles */
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl;
+  @apply bg-slate-800 border border-slate-700;
+  @apply text-white placeholder:text-slate-500;
+  @apply focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20;
+  @apply transition-all duration-200;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply w-6 h-6 border-2 border-white/20 border-t-white rounded-full;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
