@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, formatError } from '@/lib/supabase'
 import type { Barbero, BarberoConSucursal, Sucursal } from '@/lib/types'
 import { HorarioGanttModal } from '@/components/HorarioGanttModal'
 
@@ -25,7 +25,7 @@ export default function BarberosPage() {
                 .order('estacion_id', { ascending: true })
 
             if (error) {
-                console.error('Error loading barbers:', error)
+                console.warn('Error loading barbers:', formatError(error))
                 // Demo data
                 setBarberos(getDemoBarbers())
             } else {
@@ -36,7 +36,7 @@ export default function BarberosPage() {
                 }
             }
         } catch (err) {
-            console.error('Supabase not configured:', err)
+            console.warn('Supabase not configured:', formatError(err))
             setBarberos(getDemoBarbers())
         } finally {
             setLoading(false)
@@ -57,7 +57,7 @@ export default function BarberosPage() {
                 .eq('id', id)
 
             if (error) {
-                console.error('Error deleting:', error)
+                console.warn('Error deleting:', formatError(error))
                 alert('Error al eliminar')
             } else {
                 cargarBarberos()
@@ -87,15 +87,15 @@ export default function BarberosPage() {
 
         <>
             <div className="mb-8">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-white">Barberos</h1>
                         <p className="text-slate-400 mt-1">Gestiona el equipo de trabajo</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 w-full md:w-auto">
                         <button
                             onClick={() => setShowGanttModal(true)}
-                            className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-2"
+                            className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center justify-center gap-2"
                         >
                             <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -139,17 +139,71 @@ export default function BarberosPage() {
             </div>
 
             {/* Table */}
-            <div className="glass-card overflow-hidden">
+            {/* Mobile View (Cards) */}
+            <div className="grid grid-cols-1 gap-4 md:hidden mb-6">
+                {loading ? (
+                    <div className="p-8 text-center text-slate-400">Cargando...</div>
+                ) : filteredBarberos.length === 0 ? (
+                     <div className="glass-card p-6 text-center text-slate-400">No se encontraron barberos</div>
+                ) : (
+                    filteredBarberos.map(barbero => (
+                        <div key={barbero.id} className="glass-card p-4 relative">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center font-bold text-white text-lg">
+                                        {barbero.estacion_id}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white">{barbero.nombre}</h3>
+                                        <p className="text-xs text-slate-400">{barbero.usuario_tablet}</p>
+                                    </div>
+                                </div>
+                                <span className={`status-badge ${barbero.activo ? 'status-in-progress' : 'status-cancelled'}`}>
+                                    {barbero.activo ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm text-slate-300 mb-4">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Horario:</span>
+                                    <span>{getHorarioResumen(barbero.horario_laboral)}</span>
+                                </div>
+                                {barbero.bloqueo_almuerzo && (
+                                     <div className="flex justify-between">
+                                        <span className="text-slate-400">Comida:</span>
+                                        <span>{barbero.bloqueo_almuerzo.inicio} - {barbero.bloqueo_almuerzo.fin}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end gap-2 border-t border-slate-700/50 pt-3">
+                                <button onClick={() => handleEdit(barbero)} className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                </button>
+                                <button onClick={() => { setEditingBarbero(barbero); setShowScheduleModal(true); }} className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </button>
+                                <button onClick={() => handleDelete(barbero.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400">
+                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="glass-card overflow-hidden hidden md:block">
                 {loading ? (
                     <div className="p-12 flex items-center justify-center">
                         <div className="spinner w-8 h-8" />
                     </div>
                 ) : filteredBarberos.length === 0 ? (
                     <div className="p-12 text-center">
-                        <svg className="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <p className="text-slate-500">No se encontraron barberos</p>
+                        <p className="text-slate-400">No se encontraron barberos</p>
                     </div>
                 ) : (
                     <table className="w-full">
@@ -177,65 +231,32 @@ export default function BarberosPage() {
                                                 {barbero.nombre.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-white">{barbero.nombre}</p>
-                                                <p className="text-xs text-slate-400">Estación {barbero.estacion_id}</p>
+                                                <div className="font-medium text-white">{barbero.nombre}</div>
+                                                <div className="text-sm text-slate-400">Barbero</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <code className="px-2 py-1 rounded bg-slate-700 text-sm text-slate-300">
-                                            {barbero.usuario_tablet}
-                                        </code>
+                                    <td className="px-6 py-4 text-slate-400">
+                                        {barbero.usuario_tablet}
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-400">
+                                        {getHorarioResumen(barbero.horario_laboral)}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-slate-300">
-                                            {getHorarioResumen(barbero.horario_laboral)}
-                                        </p>
-                                        {barbero.bloqueo_almuerzo && (
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                🍽️ {barbero.bloqueo_almuerzo.inicio} - {barbero.bloqueo_almuerzo.fin}
-                                            </p>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`
-                      status-badge
-                      ${barbero.activo ? 'status-in-progress' : 'status-cancelled'}
-                    `}>
+                                        <span className={`status-badge ${barbero.activo ? 'status-in-progress' : 'status-cancelled'}`}>
                                             {barbero.activo ? 'Activo' : 'Inactivo'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleEdit(barbero)}
-                                                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
-                                                title="Editar"
-                                            >
-                                                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                </svg>
+                                            <button onClick={() => handleEdit(barbero)} className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 transition-colors">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
-                                            <button
-                                                onClick={() => {
-                                                    setEditingBarbero(barbero)
-                                                    setShowScheduleModal(true)
-                                                }}
-                                                className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition-colors"
-                                                title="Configurar Horario"
-                                            >
-                                                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
+                                            <button onClick={() => { setEditingBarbero(barbero); setShowScheduleModal(true); }} className="p-2 rounded-lg hover:bg-blue-900/20 text-blue-400 transition-colors">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
-                                            <button
-                                                onClick={() => handleDelete(barbero.id)}
-                                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-colors"
-                                                title="Eliminar"
-                                            >
-                                                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
+                                            <button onClick={() => handleDelete(barbero.id)} className="p-2 rounded-lg hover:bg-red-900/20 text-red-400 transition-colors">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                             </button>
                                         </div>
                                     </td>
@@ -380,7 +401,7 @@ function BarberoModal({
                 .single()
 
             if (data) {
-                setSucursalId(data.id)
+                setSucursalId((data as any).id)
             }
         }
         fetchSucursal()
@@ -430,7 +451,7 @@ function BarberoModal({
 
             onSave()
         } catch (err) {
-            console.error('Error saving:', err)
+            console.warn('Error saving:', formatError(err))
             // Demo mode - just close
             onSave()
         } finally {
@@ -439,8 +460,8 @@ function BarberoModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-card w-full max-w-lg animate-slide-in">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card w-full max-w-lg animate-slide-in border border-slate-700">
                 <div className="flex items-center justify-between p-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">
                         {barbero ? 'Editar Barbero' : 'Nuevo Barbero'}
@@ -516,7 +537,7 @@ function BarberoModal({
                             id="activo"
                             checked={formData.activo}
                             onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
-                            className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500 focus:ring-purple-500"
+                            className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-600 focus:ring-purple-500"
                         />
                         <label htmlFor="activo" className="text-sm text-slate-300">
                             Barbero activo
@@ -613,8 +634,8 @@ function HorarioModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-card w-full max-w-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card w-full max-w-2xl animate-slide-in max-h-[90vh] overflow-y-auto border border-slate-700">
                 <div className="flex items-center justify-between p-6 border-b border-slate-700">
                     <div>
                         <h2 className="text-xl font-bold text-white">Configurar Horario</h2>
@@ -679,13 +700,13 @@ function HorarioModal({
                     {diasSemana.map(dia => {
                         const isActive = !!horario[dia]
                         return (
-                            <div key={dia} className="flex items-center gap-4 p-3 rounded-lg bg-slate-800/50">
+                            <div key={dia} className={`flex items-center gap-4 p-3 rounded-lg ${isActive ? 'bg-slate-800/50' : 'opacity-60'}`}>
                                 <div className="w-32 flex items-center gap-2">
                                     <input
                                         type="checkbox"
                                         checked={isActive}
                                         onChange={(e) => handleDayToggle(dia, e.target.checked)}
-                                        className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500 focus:ring-purple-500"
+                                        className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-600 focus:ring-purple-500"
                                     />
                                     <span className="capitalize text-slate-300 font-medium">{dia}</span>
                                 </div>
@@ -707,7 +728,7 @@ function HorarioModal({
                                         />
                                     </div>
                                 ) : (
-                                    <div className="flex-1 text-slate-600 text-sm italic">
+                                    <div className="flex-1 text-slate-500 text-sm italic">
                                         Día de descanso
                                     </div>
                                 )}

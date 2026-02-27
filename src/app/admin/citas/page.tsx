@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, formatError } from '@/lib/supabase'
 import type { CitaConRelaciones, EstadoCita, Servicio, Barbero } from '@/lib/types'
 
 export default function CitasPage() {
@@ -57,7 +57,7 @@ export default function CitasPage() {
             if (error) throw error
             cargarCitas()
         } catch (err: any) {
-            console.error('Error updating status:', err)
+            console.warn('Error updating status:', formatError(err))
         }
     }
 
@@ -123,8 +123,8 @@ export default function CitasPage() {
             const { data, error } = await query
 
             if (error) {
-                console.error('Error Supabase:', error)
-                setDebugMsg(`Error: ${error.message || JSON.stringify(error)}`)
+                console.warn('Error Supabase:', formatError(error))
+                setDebugMsg(`Error: ${formatError(error)}`)
                 setCitas([])
             } else {
                 if (!data || data.length === 0) {
@@ -136,8 +136,8 @@ export default function CitasPage() {
                 }
             }
         } catch (err: any) {
-            console.error('Catch Error:', err)
-            setDebugMsg(`Catch Error: ${err.message}`)
+            console.warn('Catch Error:', formatError(err))
+            setDebugMsg(`Catch Error: ${formatError(err)}`)
             setCitas(getDemoCitas(filtroFecha))
         } finally {
             setLoading(false)
@@ -162,17 +162,17 @@ export default function CitasPage() {
     return (
         <>
             <div className="mb-8">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-white">Citas</h1>
                         <p className="text-slate-400 mt-1">
                             {viewMode === 'daily' ? 'Gestiona las citas del día' : 'Historial de clientes'}
                         </p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 w-full md:w-auto">
                         <button
                             onClick={() => setViewMode(prev => prev === 'daily' ? 'history' : 'daily')}
-                            className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-2"
+                            className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center justify-center gap-2"
                         >
                             {viewMode === 'daily' ? (
                                 <>
@@ -205,7 +205,7 @@ export default function CitasPage() {
 
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div className="glass-card p-4 text-center">
                     <p className="text-2xl font-bold text-white">{citas.length}</p>
                     <p className="text-xs text-slate-400">Total</p>
@@ -238,7 +238,7 @@ export default function CitasPage() {
 
             {/* Filters */}
             <div className="glass-card p-4 mb-6">
-                <div className="flex flex-wrap items-end gap-4">
+                <div className="flex flex-col md:flex-row md:items-end gap-4">
                     {viewMode === 'daily' ? (
                         /* Daily Filters */
                         <>
@@ -248,7 +248,7 @@ export default function CitasPage() {
                                     type="date"
                                     value={filtroFecha}
                                     onChange={(e) => setFiltroFecha(e.target.value)}
-                                    className="input-field w-auto"
+                                    className="input-field w-full md:w-auto text-white"
                                 />
                             </div>
                         </>
@@ -266,7 +266,7 @@ export default function CitasPage() {
                                         placeholder="Nombre..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="input-field w-64 pl-9"
+                                        className="input-field w-full md:w-64 pl-9"
                                     />
                                 </div>
                             </div>
@@ -276,7 +276,7 @@ export default function CitasPage() {
                                     type="date"
                                     value={historyStart}
                                     onChange={(e) => setHistoryStart(e.target.value)}
-                                    className="input-field w-auto"
+                                    className="input-field w-full md:w-auto"
                                 />
                             </div>
                             <div>
@@ -285,7 +285,7 @@ export default function CitasPage() {
                                     type="date"
                                     value={historyEnd}
                                     onChange={(e) => setHistoryEnd(e.target.value)}
-                                    className="input-field w-auto"
+                                    className="input-field w-full md:w-auto"
                                 />
                             </div>
                         </>
@@ -297,7 +297,7 @@ export default function CitasPage() {
                         <select
                             value={filtroEstado}
                             onChange={(e) => setFiltroEstado(e.target.value as EstadoCita | 'todas')}
-                            className="input-field w-auto"
+                            className="input-field w-full md:w-auto text-white"
                         >
                             <option value="todas">Todas</option>
                             <option value="confirmada">Confirmadas</option>
@@ -323,8 +323,104 @@ export default function CitasPage() {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="glass-card overflow-hidden">
+            {/* Mobile View (Cards) */}
+            <div className="md:hidden space-y-4">
+                {loading ? (
+                    <div className="p-8 flex items-center justify-center">
+                        <div className="spinner w-8 h-8" />
+                    </div>
+                ) : citas.length === 0 ? (
+                    <div className="glass-card p-8 text-center">
+                        <p className="text-slate-400">No hay citas para esta fecha</p>
+                    </div>
+                ) : (
+                    citas.map((cita) => (
+                        <div key={cita.id} className="glass-card p-4 relative">
+                            {/* Header: Time & Status */}
+                            <div className="flex justify-between items-start mb-3">
+                                <div>
+                                    <div className="text-lg font-bold text-white font-mono">
+                                        {cita.timestamp_inicio ? new Date(cita.timestamp_inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                    </div>
+                                    <div className="text-xs text-slate-400">
+                                        {cita.timestamp_fin ? new Date(cita.timestamp_fin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                    </div>
+                                </div>
+                                <span className={`
+                                    status-badge
+                                    ${cita.estado === 'confirmada' ? 'bg-blue-500/20 text-blue-400' : ''}
+                                    ${cita.estado === 'en_proceso' ? 'status-in-progress' : ''}
+                                    ${cita.estado === 'finalizada' ? 'bg-slate-500/20 text-slate-400' : ''}
+                                    ${cita.estado === 'cancelada' ? 'status-cancelled' : ''}
+                                    ${cita.estado === 'no_show' ? 'bg-red-500/20 text-red-400' : ''}
+                                `}>
+                                    {cita.estado ? cita.estado.replace('_', ' ') : ' desconocida'}
+                                </span>
+                            </div>
+
+                            {/* Client Info */}
+                            <div className="mb-3">
+                                <div className="flex items-center gap-2">
+                                    <p className="font-medium text-white text-lg">{cita.cliente_nombre}</p>
+                                    {cita.origen === 'whatsapp' && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">WA</span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-slate-400">{cita.cliente_telefono}</p>
+                            </div>
+
+                            {/* Service & Barber */}
+                            <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
+                                <div className="bg-slate-800/50 p-2 rounded">
+                                    <p className="text-xs text-slate-500 mb-0.5">Servicio</p>
+                                    <p className="text-slate-200 truncate">{cita.servicio?.nombre || 'Personalizado'}</p>
+                                </div>
+                                <div className="bg-slate-800/50 p-2 rounded">
+                                    <p className="text-xs text-slate-500 mb-0.5">Barbero</p>
+                                    <p className="text-slate-200 truncate">{cita.barbero?.nombre || 'Sin asignar'}</p>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-end gap-2 border-t border-slate-700/50 pt-3">
+                                {cita.estado === 'confirmada' && (
+                                    <button
+                                        onClick={() => handleStatusChange(cita, 'en_proceso')}
+                                        className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400"
+                                    >
+                                        <span className="sr-only">Iniciar</span>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </button>
+                                )}
+                                {cita.estado === 'en_proceso' && (
+                                    <button
+                                        onClick={() => handleStatusChange(cita, 'finalizada')}
+                                        className="p-2 rounded-lg bg-blue-500/20 text-blue-400"
+                                    >
+                                        <span className="sr-only">Finalizar</span>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => handleEditCita(cita)}
+                                    className="p-2 rounded-lg bg-slate-700 text-slate-300"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteCita(cita.id)}
+                                    className="p-2 rounded-lg bg-red-500/10 text-red-400"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="glass-card overflow-hidden hidden md:block">
                 {loading ? (
                     <div className="p-12 flex items-center justify-center">
                         <div className="spinner w-8 h-8" />
@@ -337,97 +433,99 @@ export default function CitasPage() {
                         <p className="text-slate-500">No hay citas para esta fecha</p>
                     </div>
                 ) : (
-                    <table className="w-full">
-                        <thead className="bg-slate-800/50">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Hora</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Cliente</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Servicio</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Barbero</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Estado</th>
-                                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-700/50">
-                            {citas.map((cita) => (
-                                <tr key={cita.id} className="hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-sm text-slate-300">
-                                        {cita.timestamp_inicio ? new Date(cita.timestamp_inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                        <span className="text-slate-500 mx-1">-</span>
-                                        {cita.timestamp_fin ? new Date(cita.timestamp_fin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="font-medium text-white">{cita.cliente_nombre}</p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs text-slate-400">{cita.cliente_telefono}</span>
-                                            {cita.origen === 'whatsapp' && (
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">WA</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm text-slate-300">
-                                            {cita.servicio?.nombre || 'Servicio Personalizado'}
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                            {cita.barbero?.nombre || 'Sin barbero'}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`
-                      status-badge
-                      ${cita.estado === 'confirmada' ? 'bg-blue-500/20 text-blue-400' : ''}
-                      ${cita.estado === 'en_proceso' ? 'status-in-progress' : ''}
-                      ${cita.estado === 'finalizada' ? 'bg-slate-500/20 text-slate-400' : ''}
-                      ${cita.estado === 'cancelada' ? 'status-cancelled' : ''}
-                      ${cita.estado === 'no_show' ? 'bg-red-500/20 text-red-400' : ''}
-                    `}>
-                                            {cita.estado ? cita.estado.replace('_', ' ') : ' desconocida'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            {/* Status Actions */}
-                                            {cita.estado === 'confirmada' && (
-                                                <button
-                                                    onClick={() => handleStatusChange(cita, 'en_proceso')}
-                                                    className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                                                    title="Iniciar Cita"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                </button>
-                                            )}
-                                            {cita.estado === 'en_proceso' && (
-                                                <button
-                                                    onClick={() => handleStatusChange(cita, 'finalizada')}
-                                                    className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
-                                                    title="Finalizar Cita"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                </button>
-                                            )}
-
-                                            <button
-                                                onClick={() => handleEditCita(cita)}
-                                                className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600"
-                                                title="Editar"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleDeleteCita(cita.id)}
-                                                className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                                                title="Eliminar"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </div>
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[800px]">
+                            <thead className="bg-slate-800/50">
+                                <tr>
+                                    <th className="px-3 md:px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Hora</th>
+                                    <th className="px-3 md:px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Cliente</th>
+                                    <th className="px-3 md:px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Servicio</th>
+                                    <th className="px-3 md:px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Barbero</th>
+                                    <th className="px-3 md:px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Estado</th>
+                                    <th className="px-3 md:px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase">Acciones</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700/50">
+                                {citas.map((cita) => (
+                                    <tr key={cita.id} className="hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-3 md:px-6 py-4 font-mono text-sm text-slate-300">
+                                            {cita.timestamp_inicio ? new Date(cita.timestamp_inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                            <span className="text-slate-500 mx-1">-</span>
+                                            {cita.timestamp_fin ? new Date(cita.timestamp_fin).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4">
+                                            <p className="font-medium text-white">{cita.cliente_nombre}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-slate-400">{cita.cliente_telefono}</span>
+                                                {cita.origen === 'whatsapp' && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">WA</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4">
+                                            <div className="text-sm text-slate-300">
+                                                {cita.servicio?.nombre || 'Servicio Personalizado'}
+                                            </div>
+                                            <div className="text-xs text-slate-500">
+                                                {cita.barbero?.nombre || 'Sin barbero'}
+                                            </div>
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4">
+                                            <span className={`
+                        status-badge
+                        ${cita.estado === 'confirmada' ? 'bg-blue-500/20 text-blue-400' : ''}
+                        ${cita.estado === 'en_proceso' ? 'status-in-progress' : ''}
+                        ${cita.estado === 'finalizada' ? 'bg-slate-500/20 text-slate-400 ' : ''}
+                        ${cita.estado === 'cancelada' ? 'status-cancelled' : ''}
+                        ${cita.estado === 'no_show' ? 'bg-red-500/20 text-red-400' : ''}
+                        `}>
+                                                {cita.estado ? cita.estado.replace('_', ' ') : ' desconocida'}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {/* Status Actions */}
+                                                {cita.estado === 'confirmada' && (
+                                                    <button
+                                                        onClick={() => handleStatusChange(cita, 'en_proceso')}
+                                                        className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                                                        title="Iniciar Cita"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    </button>
+                                                )}
+                                                {cita.estado === 'en_proceso' && (
+                                                    <button
+                                                        onClick={() => handleStatusChange(cita, 'finalizada')}
+                                                        className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                                        title="Finalizar Cita"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() => handleEditCita(cita)}
+                                                    className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                                    title="Editar"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleDeleteCita(cita.id)}
+                                                    className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                                                    title="Eliminar"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            </table>
+                    </div>
                 )}
             </div>
 
@@ -656,7 +754,7 @@ function CitaModal({
 
             onSave()
         } catch (err) {
-            console.error('Error saving cita:', err)
+            console.warn('Error saving cita:', formatError(err))
             // Fallback for "Demo Mode" visualization if DB fails
             alert('Error al guardar cita: ' + (err as any).message)
             // onSave() // Don't close on error
@@ -666,8 +764,8 @@ function CitaModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-card w-full max-w-lg animate-slide-in max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card w-full max-w-lg animate-slide-in max-h-[90vh] overflow-y-auto border border-slate-700">
                 <div className="flex items-center justify-between p-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">
                         {cita ? 'Editar Cita' : (initialOrigen === 'walkin' ? 'Nuevo Walk-in' : 'Nueva Cita')}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, formatError } from '@/lib/supabase'
 import type { Servicio } from '@/lib/types'
 
 export default function ServiciosPage() {
@@ -20,13 +20,13 @@ export default function ServiciosPage() {
                 .order('precio', { ascending: true })
 
             if (error) {
-                console.error('Error loading services:', error)
+                console.warn('Error loading services:', formatError(error))
                 setServicios(getDemoServices())
             } else {
                 setServicios(data || [])
             }
         } catch (err) {
-            console.error('Supabase not configured:', err)
+            console.warn('Supabase not configured:', formatError(err))
             setServicios(getDemoServices())
         } finally {
             setLoading(false)
@@ -47,7 +47,7 @@ export default function ServiciosPage() {
                 .eq('id', id)
 
             if (error) {
-                console.error('Error deleting:', error)
+                console.warn('Error deleting:', formatError(error))
                 alert('Error al eliminar')
             } else {
                 cargarServicios()
@@ -69,15 +69,15 @@ export default function ServiciosPage() {
 
     const toggleActivo = async (servicio: Servicio) => {
         try {
-            const { error } = await supabase
-                .from('servicios')
+            const { error } = await (supabase
+                .from('servicios') as any)
                 .update({ activo: !servicio.activo })
                 .eq('id', servicio.id)
 
             if (error) throw error
             cargarServicios()
         } catch (err) {
-            console.error('Error toggling:', err)
+            console.warn('Error toggling:', formatError(err))
             // Demo mode
             setServicios(servicios.map(s =>
                 s.id === servicio.id ? { ...s, activo: !s.activo } : s
@@ -88,19 +88,23 @@ export default function ServiciosPage() {
     return (
 
         <>
-            <div className="mb-8">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white">Servicios</h1>
-                        <p className="text-slate-400 mt-1">Configura los servicios disponibles</p>
-                    </div>
-                    <button onClick={handleNew} className="btn-primary flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Nuevo Servicio
-                    </button>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Servicios</h1>
+                    <p className="text-slate-400 mt-1">Administra el catálogo de servicios y precios</p>
                 </div>
+                <button
+                    onClick={() => {
+                        setEditingServicio(null)
+                        setShowModal(true)
+                    }}
+                    className="btn-primary flex items-center justify-center gap-2"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo Servicio
+                </button>
             </div>
 
             {/* Services Grid */}
@@ -110,10 +114,10 @@ export default function ServiciosPage() {
                 </div>
             ) : servicios.length === 0 ? (
                 <div className="glass-card p-12 text-center">
-                    <svg className="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
                     </svg>
-                    <p className="text-slate-500">No hay servicios configurados</p>
+                    <p className="text-slate-400">No hay servicios configurados</p>
                     <button onClick={handleNew} className="btn-primary mt-4">
                         Crear primer servicio
                     </button>
@@ -294,7 +298,7 @@ function ServicioModal({
                 .single()
 
             if (data) {
-                setSucursalId(data.id)
+                setSucursalId((data as any).id)
             }
         }
         fetchSucursal()
@@ -333,7 +337,7 @@ function ServicioModal({
 
             onSave()
         } catch (err) {
-            console.error('Error saving:', err)
+            console.warn('Error saving:', formatError(err))
             onSave()
         } finally {
             setLoading(false)
@@ -341,8 +345,8 @@ function ServicioModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-card w-full max-w-md animate-slide-in">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-card w-full max-w-md animate-slide-in border border-slate-700">
                 <div className="flex items-center justify-between p-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold text-white">
                         {servicio ? 'Editar Servicio' : 'Nuevo Servicio'}
@@ -408,7 +412,7 @@ function ServicioModal({
                             id="activo"
                             checked={formData.activo}
                             onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
-                            className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500 focus:ring-purple-500"
+                            className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-600 focus:ring-purple-500"
                         />
                         <label htmlFor="activo" className="text-sm text-slate-300">
                             Servicio disponible

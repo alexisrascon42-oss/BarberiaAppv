@@ -3,41 +3,48 @@
 /* BarberCloud AI - Design System */
 :root {
   /* Brand Colors */
-  --primary: #7c3aed;        /* Purple - brand */
+  --primary: #7c3aed; /* Purple */
   --primary-dark: #5b21b6;
   --primary-light: #a78bfa;
-  
-  --secondary: #f59e0b;      /* Amber - accent */
+
+  --secondary: #f59e0b; /* Amber */
   --secondary-dark: #d97706;
   --secondary-light: #fbbf24;
-  
+
   /* Status Colors */
-  --status-confirmed: #3b82f6;    /* Blue */
-  --status-waiting: #f59e0b;       /* Amber */
-  --status-in-progress: #10b981;   /* Green */
-  --status-completed: #6b7280;     /* Gray */
-  --status-cancelled: #ef4444;     /* Red */
-  --status-no-show: #dc2626;       /* Dark Red */
+  --status-confirmed: #3b82f6;
+  --status-waiting: #f59e0b;
+  --status-in-progress: #10b981;
+  --status-completed: #6b7280;
+  --status-cancelled: #ef4444;
+  --status-no-show: #dc2626;
+
+  /* Dark Theme Defaults */
+  --bg-primary: #0f172a; /* Slate 900 */
+  --bg-secondary: #1e293b; /* Slate 800 */
+  --bg-tertiary: #334155; /* Slate 700 */
+
+  --text-primary: #f8fafc; /* Slate 50 */
+  --text-secondary: #94a3b8; /* Slate 400 */
+  --text-muted: #64748b; /* Slate 500 */
+
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-border: rgba(148, 163, 184, 0.1);
+
+  --input-bg: #1e293b;
+  --input-border: #334155;
   
-  /* Background Colors */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  
-  /* Text Colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  
-  /* Gradients */
-  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
-  --gradient-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  --gradient-glow: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+  --gradient-brand: linear-gradient(135deg, #a78bfa 0%, #c084fc 100%);
 }
 
 /* Base Styles */
 html {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
   scroll-behavior: smooth;
 }
 
@@ -50,10 +57,22 @@ body {
 
 /* Glass Morphism Card */
 .glass-card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
   border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Input Styles */
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  @apply placeholder:text-slate-500;
+  @apply focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20;
+  @apply transition-all duration-200;
 }
 
 /* Gradient Text */
@@ -124,8 +143,13 @@ body {
 
 /* Animations */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.4); }
-  50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.7); }
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(124, 58, 237, 0.7);
+  }
 }
 
 @keyframes slide-in {
@@ -140,8 +164,12 @@ body {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-pulse-glow {
@@ -163,7 +191,7 @@ body {
 }
 
 .timeline-slot::before {
-  content: '';
+  content: "";
   @apply absolute -left-[5px] top-1/2 -translate-y-1/2;
   @apply w-2 h-2 rounded-full bg-slate-600;
 }
@@ -197,15 +225,6 @@ body {
   background: #475569;
 }
 
-/* Input Styles */
-.input-field {
-  @apply w-full px-4 py-3 rounded-xl;
-  @apply bg-slate-800 border border-slate-700;
-  @apply text-white placeholder:text-slate-500;
-  @apply focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20;
-  @apply transition-all duration-200;
-}
-
 /* Loading Spinner */
 .spinner {
   @apply w-6 h-6 border-2 border-white/20 border-t-white rounded-full;
@@ -213,5 +232,7 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }

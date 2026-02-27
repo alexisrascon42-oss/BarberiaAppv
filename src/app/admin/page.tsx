@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, formatError } from '@/lib/supabase'
 import { KPICard } from '@/components/KPICard'
 import Link from 'next/link'
 import type { KPIs } from '@/lib/types'
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
             }
 
         } catch (err) {
-            console.error('Error loading dashboard data:', err)
+            console.warn('Error loading dashboard data:', formatError(err))
         } finally {
             setLoading(false)
         }
@@ -136,35 +136,11 @@ export default function AdminDashboard() {
                     ))
                 ) : (
                     <>
-                        <KPICard
-                            titulo="Citas Hoy"
-                            valor={kpis.citasHoy}
-                            color="purple"
-                            icon="calendar"
-                            trend={+15}
-                        />
-                        <KPICard
-                            titulo="Completadas"
-                            valor={kpis.completadas}
-                            color="green"
-                            icon="check"
-                            trend={+8}
-                        />
-                        <KPICard
-                            titulo="Ingresos"
-                            valor={`$${kpis.ingresos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-                            color="blue"
-                            icon="money"
-                            trend={+22}
-                        />
-                        <KPICard
-                            titulo="No-Shows"
-                            valor={kpis.noShows}
-                            color="red"
-                            icon="x"
-                            trend={-5}
-                            trendInverse
-                        />
+                        {/* KPIs */}
+                        <KPICard titulo="Citas Hoy" valor={kpis.citasHoy} color="purple" icon="calendar" trend={+15} />
+                        <KPICard titulo="Completadas" valor={kpis.completadas} color="green" icon="check" trend={+8} />
+                        <KPICard titulo="Ingresos" valor={`$${kpis.ingresos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} color="blue" icon="money" trend={+22} />
+                        <KPICard titulo="No-Shows" valor={kpis.noShows} color="red" icon="x" trend={-5} trendInverse />
                     </>
                 )}
             </div>
@@ -179,18 +155,10 @@ export default function AdminDashboard() {
                             Ver todas →
                         </Link>
                     </div>
-                    {/* Simplified Recent list for now - ideally also dynamic */}
-                    <div className="space-y-3">
-                        <p className="text-slate-400 text-sm">Mostrando últimas citas...</p>
-                        {/* 
-                           To keep this simple and focused on the user request (Barber Status), 
-                           I am leaving this placeholder or we could map from 'citasHoy' too. 
-                           Let's map from 'citasHoy' for better experience.
-                        */}
-                    </div>
+                    
                     <div className="space-y-3 mt-2">
                         {recentCitas.length === 0 ? (
-                            <p className="text-slate-500 text-sm text-center py-4">No hay citas registradas para hoy</p>
+                            <p className="text-slate-400 text-sm text-center py-4">No hay citas registradas para hoy</p>
                         ) : (
                             recentCitas.map((cita) => {
                                 const hora = new Date(cita.timestamp_inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })

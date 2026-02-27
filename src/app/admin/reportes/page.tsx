@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, formatError } from '@/lib/supabase'
 
 import { KPICard } from '@/components/KPICard'
 
@@ -83,7 +83,7 @@ export default function ReportesPage() {
                 )
             }
         } catch (err) {
-            console.error('Error loading reports:', err)
+            console.warn('Error loading reports:', formatError(err))
             // Load Demo Data
             loadDemoData()
         } finally {
@@ -124,24 +124,25 @@ export default function ReportesPage() {
     return (
         <>
             <div className="mb-8">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white">Reportes</h1>
-                        <p className="text-slate-400 mt-1">Análisis financiero y operativo</p>
-                    </div>
-                    <div className="flex gap-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="mb-8">
+                <h1 className="text-3xl font-bold text-white">Reportes y Estadísticas</h1>
+                <p className="text-slate-400 mt-1">Análisis detallado del rendimiento de tu negocio</p>
+            </div>
+                    <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                         <input
                             type="date"
                             value={dateRange.start}
                             onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                            className="input-field w-auto"
+                            className="input-field w-full md:w-auto"
                         />
-                        <span className="self-center text-slate-500">a</span>
+                        <span className="self-center text-slate-500 hidden md:block">a</span>
+                        <span className="text-slate-500 md:hidden text-center">hasta</span>
                         <input
                             type="date"
                             value={dateRange.end}
                             onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                            className="input-field w-auto"
+                            className="input-field w-full md:w-auto"
                         />
                     </div>
                 </div>
@@ -183,22 +184,24 @@ export default function ReportesPage() {
                 {/* Chart: Ingresos por Día */}
                 <div className="glass-card p-6">
                     <h2 className="text-lg font-bold text-white mb-6">Ingresos por Día</h2>
-                    <div className="h-64 flex items-end justify-between gap-2">
-                        {ingresosPorDia.map((item, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                                <div className="w-full relative flex items-end justify-center">
-                                    <div
-                                        className="w-full bg-blue-500/20 group-hover:bg-blue-500/40 rounded-t-lg transition-all duration-300 relative"
-                                        style={{ height: `${(item.monto / maxIngreso) * 200}px` }}
-                                    >
-                                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap transition-opacity">
-                                            ${item.monto.toLocaleString()}
+                    <div className="overflow-x-auto pb-2">
+                        <div className="h-64 flex items-end justify-between gap-2 min-w-[300px]">
+                            {ingresosPorDia.map((item, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                                    <div className="w-full relative flex items-end justify-center">
+                                        <div
+                                            className="w-full bg-blue-500/20 group-hover:bg-blue-500/40 rounded-t-lg transition-all duration-300 relative"
+                                            style={{ height: `${(item.monto / maxIngreso) * 200}px` }}
+                                        >
+                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap transition-opacity z-10">
+                                                ${item.monto.toLocaleString()}
+                                            </div>
                                         </div>
                                     </div>
+                                    <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{item.dia}</span>
                                 </div>
-                                <span className="text-xs text-slate-400 font-medium">{item.dia}</span>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
 

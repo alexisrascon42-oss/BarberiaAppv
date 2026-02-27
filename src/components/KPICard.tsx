@@ -12,31 +12,31 @@ interface KPICardProps {
 export function KPICard({ titulo, valor, color, icon, trend, trendInverse }: KPICardProps) {
     const colorConfig = {
         purple: {
-            bg: 'from-purple-600/20 to-purple-700/10',
+            bg: 'bg-gradient-to-br from-purple-600/20 to-purple-700/10',
             border: 'border-purple-500/20',
             icon: 'text-purple-400',
             iconBg: 'bg-purple-500/20'
         },
         green: {
-            bg: 'from-emerald-600/20 to-emerald-700/10',
+            bg: 'bg-gradient-to-br from-emerald-600/20 to-emerald-700/10',
             border: 'border-emerald-500/20',
             icon: 'text-emerald-400',
             iconBg: 'bg-emerald-500/20'
         },
         blue: {
-            bg: 'from-blue-600/20 to-blue-700/10',
+            bg: 'bg-gradient-to-br from-blue-600/20 to-blue-700/10',
             border: 'border-blue-500/20',
             icon: 'text-blue-400',
             iconBg: 'bg-blue-500/20'
         },
         red: {
-            bg: 'from-red-600/20 to-red-700/10',
+            bg: 'bg-gradient-to-br from-red-600/20 to-red-700/10',
             border: 'border-red-500/20',
             icon: 'text-red-400',
             iconBg: 'bg-red-500/20'
         },
         amber: {
-            bg: 'from-amber-600/20 to-amber-700/10',
+            bg: 'bg-gradient-to-br from-amber-600/20 to-amber-700/10',
             border: 'border-amber-500/20',
             icon: 'text-amber-400',
             iconBg: 'bg-amber-500/20'
@@ -68,8 +68,9 @@ export function KPICard({ titulo, valor, color, icon, trend, trendInverse }: KPI
     return (
         <div className={`
       rounded-2xl p-6 border backdrop-blur-sm
-      bg-gradient-to-br ${config.bg} ${config.border}
+      ${config.bg} ${config.border}
       transition-all duration-300 hover:scale-[1.02]
+      shadow-sm hover:shadow-md
     `}>
             <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 rounded-xl ${config.iconBg} flex items-center justify-center`}>

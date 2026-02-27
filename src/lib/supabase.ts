@@ -55,7 +55,16 @@ export function createClient(): ReturnType<typeof createBrowserClient<Database>>
     )
 }
 
-// Server-side client for API routes
 export function createServerClient(supabaseUrl: string, supabaseKey: string) {
     return createBrowserClient<Database>(supabaseUrl, supabaseKey)
+}
+
+// Helper to safely format Supabase errors and avoid Next.js overlay crashes with empty objects
+export function formatError(err: any): string {
+    if (!err) return 'Unknown error'
+    const msg = err.message || err.toString()
+    if (msg.includes('<!DOCTYPE html>') || msg.includes('521')) {
+        return 'Connection Error: Database server is down or paused'
+    }
+    return typeof err === 'object' ? (err.message || JSON.stringify(err)) : String(err)
 }

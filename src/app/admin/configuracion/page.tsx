@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, formatError } from '@/lib/supabase'
 
 import type { Sucursal, HorarioApertura } from '@/lib/types'
 
@@ -47,7 +47,7 @@ export default function ConfiguracionPage() {
                 .single()
 
             if (error) {
-                console.error('Error loading config:', error)
+                console.warn('Error loading config:', formatError(error))
                 // Demo data
                 setFormData({
                     nombre: 'Barberia Demo',
@@ -80,7 +80,7 @@ export default function ConfiguracionPage() {
                 }
             }
         } catch (err) {
-            console.error('Supabase connection error:', err)
+            console.warn('Supabase connection error:', formatError(err))
         } finally {
             setLoading(false)
         }
@@ -119,7 +119,7 @@ export default function ConfiguracionPage() {
 
             alert('Configuración guardada correctamente')
         } catch (err) {
-            console.error('Error saving:', err)
+            console.warn('Error saving:', formatError(err))
             alert('Error al guardar la configuración')
         } finally {
             setSaving(false)
@@ -167,6 +167,8 @@ export default function ConfiguracionPage() {
                             Datos de la Sucursal
                         </h2>
 
+
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Nombre del Negocio</label>
@@ -199,31 +201,6 @@ export default function ConfiguracionPage() {
                                     placeholder="https://maps.google.com/..."
                                 />
                             </div>
-
-                            {/* 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Ubicación (Referencia)</label>
-                                    <input
-                                        type="text"
-                                        value={formData.ubicacion}
-                                        onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-                                        className="input-field"
-                                        placeholder="Ej. Centro Comercial Las Plazas"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Zona de Ubicación</label>
-                                    <input
-                                        type="text"
-                                        value={formData.zona_ubicacion}
-                                        onChange={(e) => setFormData({ ...formData, zona_ubicacion: e.target.value })}
-                                        className="input-field"
-                                        placeholder="Ej. Zona Norte"
-                                    />
-                                </div>
-                            </div> 
-                            */}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -295,7 +272,7 @@ export default function ConfiguracionPage() {
                         </div>
                     </div>
 
-                    <div className="glass-card p-6">
+                    <div className="glass-card p-4 sm:p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,21 +284,21 @@ export default function ConfiguracionPage() {
 
                         <div className="space-y-4">
                             {dias.map((dia) => (
-                                <div key={dia} className="flex items-center gap-4 py-2 border-b border-slate-700/50 last:border-0">
-                                    <span className="w-24 capitalize text-slate-300 font-medium">{dia}</span>
-                                    <div className="flex items-center gap-2">
+                                <div key={dia} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-3 border-b border-slate-700/50 last:border-0">
+                                    <span className="w-full sm:w-24 capitalize text-slate-300 font-medium">{dia}</span>
+                                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center w-full sm:w-auto sm:flex sm:gap-2">
                                         <input
                                             type="time"
                                             value={horario[dia as keyof HorarioApertura]?.apertura || ''}
                                             onChange={(e) => updateHorario(dia, 'apertura', e.target.value)}
-                                            className="input-field w-32 py-1"
+                                            className="input-field w-full sm:w-32 py-1 text-center"
                                         />
                                         <span className="text-slate-500 text-sm">a</span>
                                         <input
                                             type="time"
                                             value={horario[dia as keyof HorarioApertura]?.cierre || ''}
                                             onChange={(e) => updateHorario(dia, 'cierre', e.target.value)}
-                                            className="input-field w-32 py-1"
+                                            className="input-field w-full sm:w-32 py-1 text-center"
                                         />
                                     </div>
                                 </div>
@@ -376,7 +353,7 @@ export default function ConfiguracionPage() {
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-400">ID Sucursal</span>
-                                <code className="text-slate-500 bg-slate-900 px-1 rounded">1</code>
+                                <code className="text-slate-400 bg-slate-900 px-1 rounded">1</code>
                             </div>
                         </div>
                     </div>
