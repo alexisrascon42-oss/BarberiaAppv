@@ -53,6 +53,31 @@ export interface Sucursal {
     timezone: string
     activa: boolean
     created_at: string
+    // AI Agent Config
+    agent_name: string
+    agent_personality: string
+    agent_instance_name: string | null
+    agent_evolution_key: string | null
+    agent_prompt_override: string | null
+    agent_provider: 'openai' | 'anthropic' | 'groq' | null
+    agent_model: string | null
+    agent_enabled: boolean
+}
+
+
+export interface ConfiguracionIAGlobal {
+    id: number
+    evolution_api_url: string | null
+    evolution_api_key: string | null
+    openai_api_key: string | null
+    anthropic_api_key: string | null
+    groq_api_key: string | null
+    default_provider: 'openai' | 'anthropic' | 'groq'
+    openai_model: string
+    anthropic_model: string
+    groq_model: string
+    created_at: string
+    updated_at: string
 }
 
 export interface Barbero {
@@ -249,6 +274,12 @@ export interface Database {
                 Row: CostoFijo
                 Insert: Omit<CostoFijo, 'id' | 'created_at' | 'updated_at'>
                 Update: Partial<Omit<CostoFijo, 'id' | 'created_at'>>
+                Relationships: []
+            }
+            configuracion_ia_global: {
+                Row: ConfiguracionIAGlobal
+                Insert: Omit<ConfiguracionIAGlobal, 'created_at' | 'updated_at'>
+                Update: Partial<Omit<ConfiguracionIAGlobal, 'id' | 'created_at'>>
                 Relationships: []
             }
         }

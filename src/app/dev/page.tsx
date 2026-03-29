@@ -47,6 +47,21 @@ export default function DevPage() {
     const [newPassword, setNewPassword] = useState('')
     const [resetLoading, setResetLoading] = useState(false)
     const [resetMsg, setResetMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+    
+    // Global AI Config State
+    const [aiConfig, setAiConfig] = useState({
+        evolution_api_url: '',
+        evolution_api_key: '',
+        openai_api_key: '',
+        anthropic_api_key: '',
+        groq_api_key: '',
+        default_provider: 'openai',
+        openai_model: 'gpt-4o-mini',
+        anthropic_model: 'claude-3-5-sonnet-20240620',
+        groq_model: 'llama-3.1-70b-versatile'
+    })
+    const [aiLoading, setAiLoading] = useState(false)
+    const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
     useEffect(() => {
         // Environment info
@@ -93,8 +108,23 @@ export default function DevPage() {
             }
         }
 
+        const fetchAiConfig = async () => {
+            try {
+                const res = await fetch('/api/dev/config-ia')
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.config) {
+                        setAiConfig(data.config)
+                    }
+                }
+            } catch (e) {
+                console.warn('Error fetching AI config:', e)
+            }
+        }
+
         fetchTables()
         fetchUsers()
+        fetchAiConfig()
     }, [])
 
     const { logout } = useAuth()
@@ -152,6 +182,27 @@ export default function DevPage() {
             setResetMsg({ type: 'error', text: 'Error de conexion al servidor' })
         } finally {
             setResetLoading(false)
+        }
+    }
+
+    const handleSaveAiConfig = async () => {
+        setAiLoading(true)
+        setAiMsg(null)
+        try {
+            const res = await fetch('/api/dev/config-ia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(aiConfig)
+            })
+            if (res.ok) {
+                setAiMsg({ type: 'success', text: 'Configuración de IA guardada' })
+            } else {
+                setAiMsg({ type: 'error', text: 'Error al guardar la configuración' })
+            }
+        } catch {
+            setAiMsg({ type: 'error', text: 'Error de red' })
+        } finally {
+            setAiLoading(false)
         }
     }
 
@@ -296,59 +347,187 @@ export default function DevPage() {
                     </div>
                 </div>
 
-                {/* Password Reset Tool */}
-                <div className="glass-card p-6">
-                    <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                        </svg>
-                        Restablecer Contraseña
-                    </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Password Reset Tool */}
+                    <div className="glass-card p-6">
+                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                            Restablecer Contraseña
+                        </h2>
 
-                    <p className="text-sm text-slate-400 mb-4">Solo administradores. Los barberos se gestionan desde el panel admin.</p>
+                        <p className="text-sm text-slate-400 mb-4">Solo administradores. Los barberos se gestionan desde el panel admin.</p>
 
-                    {/* User Select */}
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-slate-400 mb-2">Seleccionar usuario</label>
-                            <select
-                                value={selectedUserId}
-                                onChange={(e) => { setSelectedUserId(e.target.value); setResetMsg(null) }}
-                                className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-amber-500"
-                            >
-                                <option value="">-- Selecciona --</option>
-                                {admins.map((u) => (
-                                    <option key={u.id} value={u.id}>
-                                        {u.nombre} — {u.email || u.usuario_tablet} ({u.sucursal_nombre})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm text-slate-400 mb-2">Nueva contraseña</label>
-                            <input
-                                type="text"
-                                value={newPassword}
-                                onChange={(e) => { setNewPassword(e.target.value); setResetMsg(null) }}
-                                placeholder="Minimo 6 caracteres"
-                                className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-amber-500"
-                            />
-                        </div>
-
-                        <button
-                            onClick={handleResetPassword}
-                            disabled={resetLoading || !selectedUserId || !newPassword}
-                            className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium rounded-lg transition-all text-sm"
-                        >
-                            {resetLoading ? 'Actualizando...' : 'Restablecer Contraseña'}
-                        </button>
-
-                        {resetMsg && (
-                            <div className={`p-3 rounded-lg text-sm ${resetMsg.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                {resetMsg.text}
+                        {/* User Select */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-2">Seleccionar usuario</label>
+                                <select
+                                    value={selectedUserId}
+                                    onChange={(e) => { setSelectedUserId(e.target.value); setResetMsg(null) }}
+                                    className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-amber-500"
+                                >
+                                    <option value="">-- Selecciona --</option>
+                                    {admins.map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.nombre} — {u.email || u.usuario_tablet} ({u.sucursal_nombre})
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
-                        )}
+
+                            <div>
+                                <label className="block text-sm text-slate-400 mb-2">Nueva contraseña</label>
+                                <input
+                                    type="text"
+                                    value={newPassword}
+                                    onChange={(e) => { setNewPassword(e.target.value); setResetMsg(null) }}
+                                    placeholder="Minimo 6 caracteres"
+                                    className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-amber-500"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleResetPassword}
+                                disabled={resetLoading || !selectedUserId || !newPassword}
+                                className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium rounded-lg transition-all text-sm"
+                            >
+                                {resetLoading ? 'Actualizando...' : 'Restablecer Contraseña'}
+                            </button>
+
+                            {resetMsg && (
+                                <div className={`p-3 rounded-lg text-sm ${resetMsg.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {resetMsg.text}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* AI Global Configuration */}
+                    <div className="glass-card p-6">
+                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Gestor de Proveedores IA (Global)
+                        </h2>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1.5 uppercase font-medium">Evolution API URL</label>
+                                    <input
+                                        type="text"
+                                        value={aiConfig.evolution_api_url || ''}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, evolution_api_url: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1.5 uppercase font-medium">Evolution API Key</label>
+                                    <input
+                                        type="password"
+                                        value={aiConfig.evolution_api_key || ''}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, evolution_api_key: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-colors"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <hr className="border-slate-700 my-2"/>
+
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1.5 uppercase font-medium">Proveedor de Motor por Defecto</label>
+                                <select
+                                    value={aiConfig.default_provider || 'openai'}
+                                    onChange={(e) => setAiConfig({ ...aiConfig, default_provider: e.target.value as any })}
+                                    className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-colors"
+                                >
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="groq">Groq (Llama/Mixtral)</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1.5 uppercase font-medium">OpenAI Key</label>
+                                    <input
+                                        type="password"
+                                        value={aiConfig.openai_api_key || ''}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, openai_api_key: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-colors"
+                                    />
+                                    <select
+                                        value={aiConfig.openai_model || 'gpt-4o-mini'}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, openai_model: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-xs text-slate-300 rounded-lg px-3 py-1.5 mt-1 focus:border-purple-500 outline-none transition-colors"
+                                    >
+                                        <option value="gpt-4o">GPT-4o</option>
+                                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                        <option value="gpt-4.1">GPT-4.1</option>
+                                        <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                                        <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+                                        <option value="o4-mini">o4-mini (Reasoning)</option>
+                                        <option value="o3">o3 (Reasoning)</option>
+                                        <option value="o3-mini">o3-mini (Reasoning)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-slate-400 mb-1.5 uppercase font-medium">Anthropic Key</label>
+                                    <input
+                                        type="password"
+                                        value={aiConfig.anthropic_api_key || ''}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, anthropic_api_key: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-colors"
+                                    />
+                                    <select
+                                        value={aiConfig.anthropic_model || 'claude-sonnet-4-20250514'}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, anthropic_model: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-xs text-slate-300 rounded-lg px-3 py-1.5 mt-1 focus:border-purple-500 outline-none transition-colors"
+                                    >
+                                        <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                        <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Rápido)</option>
+                                        <option value="claude-3-opus-20240229">Claude 3 Opus (Premium)</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs text-slate-400 mb-1.5 uppercase font-medium">Groq Key</label>
+                                    <input
+                                        type="password"
+                                        value={aiConfig.groq_api_key || ''}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, groq_api_key: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 outline-none transition-colors"
+                                    />
+                                    <select
+                                        value={aiConfig.groq_model || 'llama-3.3-70b-versatile'}
+                                        onChange={(e) => setAiConfig({ ...aiConfig, groq_model: e.target.value })}
+                                        className="w-full bg-slate-800/50 border border-slate-700 text-xs text-slate-300 rounded-lg px-3 py-1.5 mt-1 focus:border-purple-500 outline-none transition-colors"
+                                    >
+                                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
+                                        <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+                                        <option value="gemma2-9b-it">Gemma 2 9B</option>
+                                        <option value="compound-beta">Compound Beta (Tool Use)</option>
+                                        <option value="meta-llama/llama-4-maverick-17b-128e-instruct">Llama 4 Maverick 17B</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={handleSaveAiConfig}
+                                disabled={aiLoading}
+                                className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 text-white font-medium rounded-lg transition-all text-sm mt-2 shadow-lg shadow-purple-900/20"
+                            >
+                                {aiLoading ? 'Guardando...' : 'Guardar Configuración Global IA'}
+                            </button>
+
+                            {aiMsg && (
+                                <div className={`p-2.5 rounded-lg text-xs font-medium ${aiMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                                    {aiMsg.text}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>

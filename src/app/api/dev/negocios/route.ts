@@ -54,7 +54,10 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     try {
-        const { nombre, slug, plan, adminEmail, adminPassword, telefono_whatsapp } = await req.json()
+        const { 
+            nombre, slug, plan, adminEmail, adminPassword, telefono_whatsapp,
+            agent_name, agent_personality, agent_instance_name, agent_evolution_key
+        } = await req.json()
 
         if (!nombre || !slug || !adminEmail || !adminPassword || !telefono_whatsapp) {
             return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
@@ -79,7 +82,12 @@ export async function POST(req: NextRequest) {
                         jueves: { apertura: "09:00", cierre: "20:00" },
                         viernes: { apertura: "09:00", cierre: "20:00" },
                         sabado: { apertura: "09:00", cierre: "20:00" }
-                    }
+                    },
+                    agent_name,
+                    agent_personality,
+                    agent_instance_name,
+                    agent_evolution_key,
+                    agent_enabled: true
                 }
             ])
             .select()

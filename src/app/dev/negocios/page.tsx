@@ -29,7 +29,14 @@ export default function GestorNegocios() {
         plan: 'basico',
         telefono_whatsapp: '',
         adminEmail: '',
-        adminPassword: ''
+        adminPassword: '',
+        // AI Agent Config
+        agent_name: 'BarberBot',
+        agent_personality: 'Friendly',
+        agent_instance_name: '',
+        agent_evolution_key: '',
+        agent_provider: '', // default a global
+        agent_model: ''
     })
 
     const fetchSucursales = async () => {
@@ -62,7 +69,13 @@ export default function GestorNegocios() {
                     plan: form.plan,
                     telefono_whatsapp: form.telefono_whatsapp,
                     adminEmail: form.adminEmail,
-                    adminPassword: form.adminPassword
+                    adminPassword: form.adminPassword,
+                    agent_name: form.agent_name,
+                    agent_personality: form.agent_personality,
+                    agent_instance_name: form.agent_instance_name,
+                    agent_evolution_key: form.agent_evolution_key,
+                    agent_provider: form.agent_provider || null,
+                    agent_model: form.agent_model || null
                 })
             })
 
@@ -71,7 +84,20 @@ export default function GestorNegocios() {
                 throw new Error(err.error || 'Error al crear negocio')
             }
 
-            setForm({ nombre: '', slug: '', plan: 'basico', telefono_whatsapp: '', adminEmail: '', adminPassword: '' })
+            setForm({ 
+                nombre: '', 
+                slug: '', 
+                plan: 'basico', 
+                telefono_whatsapp: '', 
+                adminEmail: '', 
+                adminPassword: '',
+                agent_name: 'BarberBot',
+                agent_personality: 'Friendly',
+                agent_instance_name: '',
+                agent_evolution_key: '',
+                agent_provider: '',
+                agent_model: ''
+            })
             setIsCreating(false)
             fetchSucursales()
             alert('Negocio y Administrador creados con éxito.')
@@ -250,6 +276,106 @@ export default function GestorNegocios() {
                                 </div>
                             </div>
 
+                            <div className="pt-6 border-t border-slate-700/50">
+                                <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-4">Configuración Agente IA</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Nombre del Agente</label>
+                                        <input
+                                            type="text"
+                                            value={form.agent_name}
+                                            onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
+                                            className="input-field w-full bg-slate-900 border-slate-700"
+                                            placeholder="Ej. BarberBot"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Personalidad</label>
+                                        <select
+                                            value={form.agent_personality}
+                                            onChange={(e) => setForm({ ...form, agent_personality: e.target.value })}
+                                            className="input-field w-full bg-slate-900 border-slate-700"
+                                        >
+                                            <option value="Friendly">Amigable / Cercano</option>
+                                            <option value="Professional">Profesional / Serio</option>
+                                            <option value="Funny">Divertido / Informal</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Instancia Evolution API</label>
+                                        <input
+                                            type="text"
+                                            value={form.agent_instance_name}
+                                            onChange={(e) => setForm({ ...form, agent_instance_name: e.target.value })}
+                                            className="input-field w-full bg-slate-900 border-slate-700"
+                                            placeholder="Nombre de la instancia"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Evolution API Key (Opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={form.agent_evolution_key}
+                                            onChange={(e) => setForm({ ...form, agent_evolution_key: e.target.value })}
+                                            className="input-field w-full bg-slate-900 border-slate-700"
+                                            placeholder="Llave específica para esta sucursal"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Proveedor Custom (Dejar vacío=Global)</label>
+                                        <select
+                                            value={form.agent_provider}
+                                            onChange={(e) => setForm({ ...form, agent_provider: e.target.value })}
+                                            className="input-field w-full bg-slate-900 border-slate-700"
+                                        >
+                                            <option value="">-- Ignorar (Usar Configuración Global) --</option>
+                                            <option value="openai">OpenAI</option>
+                                            <option value="anthropic">Anthropic</option>
+                                            <option value="groq">Groq</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Modelo del Agente</label>
+                                        <select
+                                            value={form.agent_model}
+                                            onChange={(e) => setForm({ ...form, agent_model: e.target.value })}
+                                            className="input-field w-full bg-slate-900 border-slate-700"
+                                        >
+                                            <option value="">-- Usar modelo global por defecto --</option>
+                                            {(!form.agent_provider || form.agent_provider === 'openai') && (
+                                                <>
+                                                    <option value="gpt-4o">GPT-4o</option>
+                                                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                                    <option value="gpt-4.1">GPT-4.1</option>
+                                                    <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                                                    <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+                                                    <option value="o4-mini">o4-mini (Reasoning)</option>
+                                                    <option value="o3">o3 (Reasoning)</option>
+                                                    <option value="o3-mini">o3-mini (Reasoning)</option>
+                                                </>
+                                            )}
+                                            {form.agent_provider === 'anthropic' && (
+                                                <>
+                                                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                                                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                                    <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (Rápido)</option>
+                                                    <option value="claude-3-opus-20240229">Claude 3 Opus (Premium)</option>
+                                                </>
+                                            )}
+                                            {form.agent_provider === 'groq' && (
+                                                <>
+                                                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
+                                                    <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+                                                    <option value="gemma2-9b-it">Gemma 2 9B</option>
+                                                    <option value="compound-beta">Compound Beta (Tool Use)</option>
+                                                    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">Llama 4 Maverick 17B</option>
+                                                </>
+                                            )}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="flex justify-end gap-3 pt-4">
                                 <button
                                     type="button"
@@ -298,6 +424,29 @@ export default function GestorNegocios() {
                                     <p className="text-lg font-bold text-white">{s._stats.citas_total}</p>
                                     <p className="text-[10px] text-slate-500 uppercase">Citas</p>
                                 </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 mb-4">
+                                <Link
+                                    href={`/dev/negocios/${s.id}/ia-monitor`}
+                                    className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg p-2 text-center transition-colors shadow-sm shadow-purple-900/10"
+                                >
+                                    <p className="text-[10px] uppercase font-bold tracking-wider mb-1 flex justify-center items-center gap-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        Monitor AI
+                                    </p>
+                                    <p className="text-xs">Ver Métricas</p>
+                                </Link>
+                                <Link
+                                    href={`/dev/negocios/${s.id}/ia-tester`}
+                                    className="bg-fuchsia-500/10 hover:bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/20 rounded-lg p-2 text-center transition-colors shadow-sm shadow-fuchsia-900/10"
+                                >
+                                    <p className="text-[10px] uppercase font-bold tracking-wider mb-1 flex justify-center items-center gap-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                        Chat Tester
+                                    </p>
+                                    <p className="text-xs">Probar Agente</p>
+                                </Link>
                             </div>
 
                             <div className="space-y-2 mb-4 text-sm text-slate-300">
